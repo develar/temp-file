@@ -1,5 +1,5 @@
 import BluebirdPromise from "bluebird-lst"
-import { mkdirs, mkdtemp, remove, removeSync, unlink, unlinkSync, mkdir } from "fs-extra-p"
+import { mkdir, mkdirs, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync } from "fs-extra-p"
 import { Lazy } from "lazy-val"
 import { tmpdir } from "os"
 import * as path from "path"
@@ -26,6 +26,7 @@ const tempDir = new Lazy<string>(() => {
   }
 
   return promise
+    .then(it => realpath(it))
     .then(dir => {
       require("async-exit-hook")((callback: (() => void) | null) => {
         const managers = Array.from(tmpDirManagers)

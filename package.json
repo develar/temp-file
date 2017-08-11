@@ -1,6 +1,6 @@
 {
   "name": "temp-file",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "out/main.js",
   "author": "Vladimir Krivosheev",
   "license": "MIT",
