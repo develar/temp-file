@@ -1,5 +1,7 @@
 ## temp-file
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/develar/temp-file.svg)](https://greenkeeper.io/)
+
 ```typescript
 export function getTempName(prefix?: string | null | undefined): string;
 
