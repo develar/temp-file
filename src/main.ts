@@ -73,28 +73,31 @@ function handleError(e: any, file: string) {
 interface TempFileInfo {
   isDir: boolean
   path: string
-  disposer: ((file: string) => Promise<void>) | null
+  disposer?: ((file: string) => Promise<void>) | null
 }
 
 export interface GetTempFileOptions {
-  disposer: ((file: string) => Promise<void>) | null
+  disposer?: ((file: string) => Promise<void>) | null
   prefix?: string | null
+  isDir?: boolean
 }
+
+const IS_DIR_OPTIONS: GetTempFileOptions = {isDir: true}
 
 export class TmpDir {
   private tempFiles: Array<TempFileInfo> = []
   private registered = false
 
   getTempDir(suffix: string = ""): Promise<string> {
-    return this.getTempFile(suffix, true)
+    return this.getTempFile(suffix, IS_DIR_OPTIONS)
   }
 
   createTempDir(suffix: string = ""): Promise<string> {
-    return this.getTempFile(suffix, true)
+    return this.getTempFile(suffix, IS_DIR_OPTIONS)
       .then(it => mkdir(it).then(() => it))
   }
 
-  getTempFile(suffix: string | null, isDir: boolean = false, options?: GetTempFileOptions): Promise<string> {
+  getTempFile(suffix: string | null, options?: GetTempFileOptions): Promise<string> {
     return tempDir.value
       .then(it => {
         if (!this.registered) {
@@ -107,7 +110,7 @@ export class TmpDir {
         const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(16)}${nameSuffix}`
         this.tempFiles.push({
           path: result,
-          isDir,
+          isDir: options != null && options.isDir === true,
           disposer: options == null ? null : options.disposer,
         })
         return result
