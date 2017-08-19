@@ -76,6 +76,11 @@ interface TempFileInfo {
   disposer: ((file: string) => Promise<void>) | null
 }
 
+export interface GetTempFileOptions {
+  disposer: ((file: string) => Promise<void>) | null
+  prefix?: string | null
+}
+
 export class TmpDir {
   private tempFiles: Array<TempFileInfo> = []
   private registered = false
@@ -89,7 +94,7 @@ export class TmpDir {
       .then(it => mkdir(it).then(() => it))
   }
 
-  getTempFile(suffix: string, isDir: boolean = false, disposer: ((file: string) => Promise<void>) | null = null): Promise<string> {
+  getTempFile(suffix: string | null, isDir: boolean = false, options?: GetTempFileOptions): Promise<string> {
     return tempDir.value
       .then(it => {
         if (!this.registered) {
@@ -97,8 +102,14 @@ export class TmpDir {
           tmpDirManagers.add(this)
         }
 
-        const result = `${it}${path.sep}${(tmpFileCounter++).toString(16)}${suffix.length === 0 || suffix.startsWith(".") ? suffix : `-${suffix}`}`
-        this.tempFiles.push({path: result, isDir, disposer})
+        const namePrefix = options == null || options.prefix == null ? "" : options.prefix
+        const nameSuffix = suffix == null || suffix.length === 0 ? "" : (suffix.startsWith(".") ? suffix : `-${suffix}`)
+        const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(16)}${nameSuffix}`
+        this.tempFiles.push({
+          path: result,
+          isDir,
+          disposer: options == null ? null : options.disposer,
+        })
         return result
       })
   }
