@@ -1,6 +1,6 @@
 {
   "name": "temp-file",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "main": "out/main.js",
   "author": "Vladimir Krivosheev",
   "license": "MIT",
@@ -22,9 +22,9 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^3.9.1",
-    "@types/node": "^8.0.24",
+    "@types/node": "^8.0.25",
     "babel-preset-ts-node4-bluebird": "^0.1.0",
-    "ts-babel": "^4.0.1",
+    "ts-babel": "^4.1.4",
     "typescript": "^2.4.2"
   },
   "babel": {

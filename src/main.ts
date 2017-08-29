@@ -16,13 +16,13 @@ export function getTempName(prefix?: string | null | undefined): string {
 
 const tempDir = new Lazy<string>(() => {
   let promise: Promise<string>
-  const systemTmpDir = process.env.TEST_DIR || tmpdir()
+  const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
   if (mkdtemp == null) {
-    const dir = path.join(systemTmpDir, getTempName("electron-builder"))
+    const dir = path.join(systemTmpDir, getTempName("temp-files"))
     promise = mkdirs(dir, {mode: 448}).then(() => dir)
   }
   else {
-    promise = mkdtemp(`${path.join(systemTmpDir, "electron-builder")}-`)
+    promise = mkdtemp(`${path.join(systemTmpDir, "temp-files")}-`)
   }
 
   return promise
@@ -77,27 +77,26 @@ interface TempFileInfo {
 }
 
 export interface GetTempFileOptions {
-  disposer?: ((file: string) => Promise<void>) | null
   prefix?: string | null
-  isDir?: boolean
-}
+  suffix?: string | null
 
-const IS_DIR_OPTIONS: GetTempFileOptions = {isDir: true}
+  disposer?: ((file: string) => Promise<void>) | null
+}
 
 export class TmpDir {
   private tempFiles: Array<TempFileInfo> = []
   private registered = false
 
-  getTempDir(suffix: string = ""): Promise<string> {
-    return this.getTempFile(suffix, IS_DIR_OPTIONS)
+  getTempDir(options?: GetTempFileOptions): Promise<string> {
+    return this.getTempFile(options, true)
   }
 
-  createTempDir(suffix: string = ""): Promise<string> {
-    return this.getTempFile(suffix, IS_DIR_OPTIONS)
+  createTempDir(options?: GetTempFileOptions): Promise<string> {
+    return this.getTempFile(options, true)
       .then(it => mkdir(it).then(() => it))
   }
 
-  getTempFile(suffix: string | null, options?: GetTempFileOptions): Promise<string> {
+  getTempFile(options?: GetTempFileOptions, isDir = false): Promise<string> {
     return tempDir.value
       .then(it => {
         if (!this.registered) {
@@ -105,12 +104,14 @@ export class TmpDir {
           tmpDirManagers.add(this)
         }
 
-        const namePrefix = options == null || options.prefix == null ? "" : options.prefix
-        const nameSuffix = suffix == null || suffix.length === 0 ? "" : (suffix.startsWith(".") ? suffix : `-${suffix}`)
+        const prefix = nullize(options == null ? null : options.prefix)
+        const suffix = nullize(options == null ? null : options.suffix)
+        const namePrefix = prefix == null ? "" : `${prefix}-`
+        const nameSuffix = suffix == null ? "" : (suffix.startsWith(".") ? suffix : `-${suffix}`)
         const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(16)}${nameSuffix}`
         this.tempFiles.push({
           path: result,
-          isDir: options != null && options.isDir === true,
+          isDir,
           disposer: options == null ? null : options.disposer,
         })
         return result
@@ -169,4 +170,8 @@ export class TmpDir {
         })
     }, {concurrency: 8})
   }
+}
+
+function nullize(s?: string | null) {
+  return s == null || s.length === 0 ? null : s
 }
