@@ -1,5 +1,5 @@
 import BluebirdPromise from "bluebird-lst"
-import { mkdir, mkdirs, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync } from "fs-extra-p"
+import { ensureDir, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync } from "fs-extra-p"
 import { Lazy } from "lazy-val"
 import { tmpdir } from "os"
 import * as path from "path"
@@ -16,10 +16,10 @@ export function getTempName(prefix?: string | null | undefined): string {
 
 const tempDir = new Lazy<string>(() => {
   let promise: Promise<string>
-  const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
+  const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
   if (mkdtemp == null) {
     const dir = path.join(systemTmpDir, getTempName("temp-files"))
-    promise = mkdirs(dir, {mode: 448}).then(() => dir)
+    promise = ensureDir(dir, {mode: 448}).then(() => dir)
   }
   else {
     promise = mkdtemp(`${path.join(systemTmpDir, "temp-files")}-`)
@@ -28,40 +28,46 @@ const tempDir = new Lazy<string>(() => {
   return promise
     .then(it => realpath(it))
     .then(dir => {
-      require("async-exit-hook")((callback: (() => void) | null) => {
-        const managers = Array.from(tmpDirManagers)
-        tmpDirManagers.clear()
-
-        if (callback == null) {
-          for (const manger of managers) {
-            manger.cleanupSync()
-          }
-
-          try {
-            removeSync(dir)
-          }
-          catch (e) {
-            handleError(e, dir)
-          }
-          return
-        }
-
-        // each instead of map to avoid fs overload
-        BluebirdPromise.each(managers, it => it.cleanup())
-          .then(() => remove(dir))
-          .then(() => callback())
-          .catch(e => {
-            try {
-              handleError(e, dir)
-            }
-            finally {
-              callback()
-            }
-          })
-      })
+      if (process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false") {
+        addExitHook(dir)
+      }
       return dir
     })
 })
+
+function addExitHook(dir: string) {
+  require("async-exit-hook")((callback: (() => void) | null) => {
+    const managers = Array.from(tmpDirManagers)
+    tmpDirManagers.clear()
+
+    if (callback == null) {
+      for (const manager of managers) {
+        manager.cleanupSync()
+      }
+
+      try {
+        removeSync(dir)
+      }
+      catch (e) {
+        handleError(e, dir)
+      }
+      return
+    }
+
+    // each instead of map to avoid fs overload
+    BluebirdPromise.each(managers, it => it.cleanup())
+      .then(() => remove(dir))
+      .then(() => callback())
+      .catch(e => {
+        try {
+          handleError(e, dir)
+        }
+        finally {
+          callback()
+        }
+      })
+  })
+}
 
 function handleError(e: any, file: string) {
   if (e.code !== "EPERM" && e.code !== "ENOENT") {
@@ -93,7 +99,7 @@ export class TmpDir {
 
   createTempDir(options?: GetTempFileOptions): Promise<string> {
     return this.getTempFile(options, true)
-      .then(it => mkdir(it).then(() => it))
+      .then(it => ensureDir(it).then(() => it))
   }
 
   getTempFile(options?: GetTempFileOptions, isDir = false): Promise<string> {

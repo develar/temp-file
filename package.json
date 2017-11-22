@@ -1,6 +1,6 @@
 {
   "name": "temp-file",
-  "version": "2.0.3",
+  "version": "2.1.1",
   "main": "out/main.js",
   "author": "Vladimir Krivosheev",
   "license": "MIT",
@@ -16,20 +16,20 @@
   },
   "dependencies": {
     "async-exit-hook": "^2.0.1",
-    "bluebird-lst": "^1.0.3",
-    "fs-extra-p": "^4.4.0",
+    "bluebird-lst": "^1.0.5",
+    "fs-extra-p": "^4.4.4",
     "lazy-val": "^1.0.2"
   },
   "devDependencies": {
-    "@types/js-yaml": "^3.9.1",
-    "@types/node": "^8.0.25",
-    "babel-preset-ts-node4-bluebird": "^0.1.0",
-    "ts-babel": "^4.1.4",
-    "typescript": "^2.4.2"
+    "@types/js-yaml": "^3.10.0",
+    "@types/node": "^8.0.53",
+    "babel-preset-ts-node6-bluebird": "^1.0.1",
+    "ts-babel": "^4.1.8",
+    "typescript": "^2.6.1"
   },
   "babel": {
     "presets": [
-      "babel-preset-ts-node4-bluebird"
+      "babel-preset-ts-node6-bluebird"
     ]
   },
   "typings": "./out/main.d.ts"
