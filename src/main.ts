@@ -17,18 +17,22 @@ export function getTempName(prefix?: string | null | undefined): string {
 const tempDir = new Lazy<string>(() => {
   let promise: Promise<string>
   const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
-  if (mkdtemp == null) {
+  const isTempDirManagedExternally = process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false"
+  if (isTempDirManagedExternally) {
+    promise = BluebirdPromise.resolve(systemTmpDir)
+  }
+  else if (mkdtemp == null) {
     const dir = path.join(systemTmpDir, getTempName("temp-files"))
     promise = ensureDir(dir, {mode: 448}).then(() => dir)
   }
   else {
-    promise = mkdtemp(`${path.join(systemTmpDir, "temp-files")}-`)
+    promise = mkdtemp(`${path.join(systemTmpDir, "temp-dir")}-`)
   }
 
   return promise
     .then(it => realpath(it))
     .then(dir => {
-      if (process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false") {
+      if (isTempDirManagedExternally) {
         addExitHook(dir)
       }
       return dir
