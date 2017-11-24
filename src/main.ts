@@ -17,7 +17,7 @@ export function getTempName(prefix?: string | null | undefined): string {
 const tempDir = new Lazy<string>(() => {
   let promise: Promise<string>
   const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
-  const isTempDirManagedExternally = process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false"
+  const isTempDirManagedExternally = process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT === "false"
   if (isTempDirManagedExternally) {
     promise = BluebirdPromise.resolve(systemTmpDir)
   }

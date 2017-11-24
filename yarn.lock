@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@types/js-yaml@^3.10.0":
-  version "3.10.0"
-  resolved "https://registry.yarnpkg.com/@types/js-yaml/-/js-yaml-3.10.0.tgz#9f69ce9554188dcf6f5a961d9632b45d89973a80"
+"@types/js-yaml@^3.10.1":
+  version "3.10.1"
+  resolved "https://registry.yarnpkg.com/@types/js-yaml/-/js-yaml-3.10.1.tgz#a4ddaf67fec34151e620cdbdd22e40b64217f577"
 
 "@types/node@^8.0.53":
   version "8.0.53"
