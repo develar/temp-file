@@ -8,10 +8,10 @@ let tmpFileCounter = 0
 const tmpDirManagers = new Set<TmpDir>()
 
 // add date to avoid use stale temp dir
-const tempDirPrefix = `${process.pid.toString(16)}-${Date.now().toString(16)}`
+const tempDirPrefix = `${process.pid.toString(36)}-${Date.now().toString(36)}`
 
 export function getTempName(prefix?: string | null | undefined): string {
-  return `${prefix == null ? "" : `${prefix}-`}${tempDirPrefix}-${(tmpFileCounter++).toString(16)}`
+  return `${prefix == null ? "" : `${prefix}-`}${tempDirPrefix}-${(tmpFileCounter++).toString(36)}`
 }
 
 const tempDir = new Lazy<string>(() => {
@@ -118,7 +118,7 @@ export class TmpDir {
         const suffix = nullize(options == null ? null : options.suffix)
         const namePrefix = prefix == null ? "" : `${prefix}-`
         const nameSuffix = suffix == null ? "" : (suffix.startsWith(".") ? suffix : `-${suffix}`)
-        const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(16)}${nameSuffix}`
+        const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(36)}${nameSuffix}`
         this.tempFiles.push({
           path: result,
           isDir,
