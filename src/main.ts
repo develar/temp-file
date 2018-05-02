@@ -97,6 +97,15 @@ export class TmpDir {
   private tempFiles: Array<TempFileInfo> = []
   private registered = false
 
+  constructor(private readonly debugName: string = "") {
+  }
+
+  // noinspection JSMethodCanBeStatic
+  // noinspection JSUnusedGlobalSymbols
+  get rootTempDir(): Promise<string> {
+    return tempDir.value
+  }
+
   getTempDir(options?: GetTempFileOptions): Promise<string> {
     return this.getTempFile(options, true)
   }
@@ -179,6 +188,10 @@ export class TmpDir {
           handleError(e, it.path)
         })
     }, {concurrency: 8})
+  }
+
+  toString() {
+    return this.debugName
   }
 }
 
