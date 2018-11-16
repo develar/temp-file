@@ -1,7 +1,6 @@
 import BluebirdPromise from "bluebird-lst"
-import { ensureDir, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync } from "fs-extra-p"
-import { Lazy } from "lazy-val"
-import { tmpdir } from "os"
+import {ensureDir, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync} from "fs-extra-p"
+import {tmpdir} from "os"
 import * as path from "path"
 
 let tmpFileCounter = 0
@@ -14,30 +13,31 @@ export function getTempName(prefix?: string | null | undefined): string {
   return `${prefix == null ? "" : `${prefix}-`}${tempDirPrefix}-${(tmpFileCounter++).toString(36)}`
 }
 
-const tempDir = new Lazy<string>(() => {
-  let promise: Promise<string>
-  const systemTmpDir = process.env.TEST_TMP_DIR || process.env.ELECTRON_BUILDER_TMP_DIR || process.env.ELECTRON_BUILDER_TEST_DIR || tmpdir()
-  const isEnsureRemovedOnExit = process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false"
-  if (!isEnsureRemovedOnExit) {
-    promise = Promise.resolve(systemTmpDir)
-  }
-  else if (mkdtemp == null) {
-    const dir = path.join(systemTmpDir, getTempName("temp-files"))
-    promise = ensureDir(dir, {mode: 448}).then(() => dir)
-  }
-  else {
-    promise = mkdtemp(`${path.join(systemTmpDir, "temp-dir")}-`)
+let tempDirPromise: Promise<string> | null
+let tempBaseDir: string | null
+
+function getBaseTempDir(): Promise<string> {
+  if (tempDirPromise != null) {
+    return tempDirPromise
   }
 
-  return promise
+  if (tempBaseDir != null) {
+    return Promise.resolve(tempBaseDir)
+  }
+
+  const systemTmpDir = process.env.APP_BUILDER_TMP_DIR || tmpdir()
+  const isEnsureRemovedOnExit = process.env.TMP_DIR_MANAGER_ENSURE_REMOVED_ON_EXIT !== "false"
+  tempDirPromise = mkdtemp(path.join(systemTmpDir, "t-"))
     .then(it => realpath(it))
     .then(dir => {
       if (isEnsureRemovedOnExit) {
         addExitHook(dir)
       }
+      tempBaseDir = dir
       return dir
     })
-})
+  return tempDirPromise
+}
 
 function addExitHook(dir: string) {
   require("async-exit-hook")((callback: (() => void) | null) => {
@@ -100,10 +100,9 @@ export class TmpDir {
   constructor(private readonly debugName: string = "") {
   }
 
-  // noinspection JSMethodCanBeStatic
-  // noinspection JSUnusedGlobalSymbols
+  // noinspection JSMethodCanBeStatic,JSUnusedGlobalSymbols
   get rootTempDir(): Promise<string> {
-    return tempDir.value
+    return getBaseTempDir()
   }
 
   getTempDir(options?: GetTempFileOptions): Promise<string> {
@@ -116,8 +115,8 @@ export class TmpDir {
   }
 
   getTempFile(options?: GetTempFileOptions, isDir = false): Promise<string> {
-    return tempDir.value
-      .then(it => {
+    return getBaseTempDir()
+      .then(baseTempDir => {
         if (!this.registered) {
           this.registered = true
           tmpDirManagers.add(this)
@@ -127,7 +126,7 @@ export class TmpDir {
         const suffix = nullize(options == null ? null : options.suffix)
         const namePrefix = prefix == null ? "" : `${prefix}-`
         const nameSuffix = suffix == null ? "" : (suffix.startsWith(".") ? suffix : `-${suffix}`)
-        const result = `${it}${path.sep}${namePrefix}${(tmpFileCounter++).toString(36)}${nameSuffix}`
+        const result = `${baseTempDir}${path.sep}${namePrefix}${(tmpFileCounter++).toString(36)}${nameSuffix}`
         this.tempFiles.push({
           path: result,
           isDir,
@@ -171,12 +170,23 @@ export class TmpDir {
   cleanup(): Promise<any> {
     const tempFiles = this.tempFiles
     tmpDirManagers.delete(this)
+
     this.registered = false
     if (tempFiles.length === 0) {
       return Promise.resolve()
     }
-
     this.tempFiles = []
+
+    if (tmpDirManagers.size === 0) {
+      const dir = tempBaseDir
+      if (dir == null) {
+        return Promise.resolve()
+      }
+
+      tempBaseDir = null
+      tempDirPromise = null
+      return remove(dir)
+    }
 
     return BluebirdPromise.map(tempFiles, it => {
       if (it.disposer != null) {
@@ -187,7 +197,7 @@ export class TmpDir {
         .catch(e => {
           handleError(e, it.path)
         })
-    }, {concurrency: 8})
+    }, {concurrency: 4})
   }
 
   toString() {
