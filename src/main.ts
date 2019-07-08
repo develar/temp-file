@@ -1,5 +1,4 @@
-import BluebirdPromise from "bluebird-lst"
-import {ensureDir, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync} from "fs-extra-p"
+import {ensureDir, mkdtemp, realpath, remove, removeSync, unlink, unlinkSync} from "fs-extra"
 import {tmpdir} from "os"
 import * as path from "path"
 
@@ -58,8 +57,7 @@ function addExitHook(dir: string) {
       return
     }
 
-    // each instead of map to avoid fs overload
-    BluebirdPromise.each(managers, it => it.cleanup())
+    Promise.all(managers.map(it => it.cleanup()))
       .then(() => remove(dir))
       .then(() => callback())
       .catch(e => {
@@ -188,7 +186,7 @@ export class TmpDir {
       return remove(dir)
     }
 
-    return BluebirdPromise.map(tempFiles, it => {
+    return Promise.all(tempFiles.map(it => {
       if (it.disposer != null) {
         return it.disposer(it.path)
       }
@@ -197,7 +195,7 @@ export class TmpDir {
         .catch(e => {
           handleError(e, it.path)
         })
-    }, {concurrency: 4})
+    }))
   }
 
   toString() {
