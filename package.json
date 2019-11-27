@@ -1,6 +1,6 @@
 {
   "name": "temp-file",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "main": "out/main.js",
   "author": "Vladimir Krivosheev",
   "license": "MIT",
@@ -19,12 +19,12 @@
     "fs-extra": "^8.1.0"
   },
   "devDependencies": {
-    "@types/fs-extra": "^8.0.0",
+    "@types/fs-extra": "^8.0.1",
     "@types/js-yaml": "^3.12.1",
-    "@types/node": "^12.6.0",
+    "@types/node": "^12.12.14",
     "babel-preset-ts-node8": "^4.0.0",
     "ts-babel": "^6.1.7",
-    "typescript": "^3.5.2"
+    "typescript": "^3.7.2"
   },
   "babel": {
     "presets": [
